@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: virgin Airlines Passenger Notification WebSocket API
+  version: 1.0.0
+  description: >
+    REST endpoints to create/manage a notification session, plus a WebSocket endpoint
+    used by passenger clients to receive real-time notifications (e.g. flight gate changes).
+servers:
+  - url: https://api.virgin-airlines.demo
+    description: Placeholder gateway base URL
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OIDC bearer token
+
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required: [passengerId, bookingPnr]
+      properties:
+        passengerId:
+          type: string
+          format: uuid
+        bookingPnr:
+          type: string
+          minLength: 6
+          maxLength: 6
+        device:
+          type: object
+          properties:
+            clientType:
+              type: string
+              example: "spa"
+            userAgent:
+              type: string
+              example: "Mozilla/5.0 ..."
+      additionalProperties: false
+
+    CreateSessionResponse:
+      type: object
+      required: [sessionId, wsUrl, expiresAt, heartbeatIntervalSec]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        wsUrl:
+          type: string
+          description: WebSocket URL for this session (connect and listen)
+          example: "wss://api.virgin-airlines.demo/ws/v1/notifications?sessionId=7ac5b6b0-acde-4db9-9c2e-2d6a90f2c7c0"
+        expiresAt:
+          type: string
+          format: date-time
+        heartbeatIntervalSec:
+          type: integer
+          example: 25
+
+    NotificationEnvelope:
+      type: object
+      required: [type, eventType, correlationId, occurredAt, payload]
+      properties:
+        type:
+          type: string
+          enum: [notification]
+        eventType:
+          type: string
+          enum: [flight.changed]
+        correlationId:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        payload:
+          $ref: '#/components/schemas/FlightChangedNotificationPayload'
+
+    FlightChangedNotificationPayload:
+      type: object
+      required: [passengerId, bookingPnr, flightId, flightNumber, change, message]
+      properties:
+        passengerId:
+          type: string
+          format: uuid
+        bookingPnr:
+          type: string
+          minLength: 6
+          maxLength: 6
+        flightId:
+          type: string
+          format: uuid
+        flightNumber:
+          type: string
+          example: VA801
+        change:
+          type: object
+          required: [field, oldValue, newValue]
+          properties:
+            field:
+              type: string
+              example: boardingGate
+            oldValue:
+              type: string
+              nullable: true
+              example: "12"
+            newValue:
+              type: string
+              example: "14"
+        message:
+          type: string
+          description: AI-tailored notification message (e.g. produced via OpenAI call)
+          example: "Hi Joseph, your gate for VA801 has changed from 12 to 14. Head to Gate 14 when you're ready."
+
+paths:
+  /api/v1/notifications/sessions:
+    post:
+      summary: Create a passenger notification session and return a WebSocket URL
+      operationId: createNotificationSession
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            examples:
+              create:
+                value:
+                  passengerId: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
+                  bookingPnr: "AB12CD"
+                  device:
+                    clientType: "spa"
+                    userAgent: "Mozilla/5.0..."
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionResponse'
+              examples:
+                ok:
+                  value:
+                    sessionId: "7ac5b6b0-acde-4db9-9c2e-2d6a90f2c7c0"
+                    wsUrl: "wss://api.virgin-airlines.demo/ws/v1/notifications?sessionId=7ac5b6b0-acde-4db9-9c2e-2d6a90f2c7c0"

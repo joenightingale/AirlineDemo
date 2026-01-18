@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: Virgin Airlines Travel Companion API (Mock)
+  version: 1.0.0
+  description: >
+    Demo API for a browser-based mobile SPA. Authentication is assumed (OIDC bearer token).
+servers:
+  - url: https://api.Virgin-airlines.demo
+    description: Demo server (placeholder)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OIDC Bearer token (mocked in SPA)
+
+  schemas:
+    Passenger:
+      type: object
+      required: [id, firstName, lastName, loyaltyPoints]
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+          example: Joseph
+        lastName:
+          type: string
+          example: Nightingale
+        loyaltyPoints:
+          type: integer
+          example: 48399
+
+    Airport:
+      type: object
+      required: [code, city, country]
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: MEL
+        city:
+          type: string
+          example: Melbourne
+        country:
+          type: string
+          example: Australia
+
+    Flight:
+      type: object
+      required:
+        - id
+        - flightNumber
+        - origin
+        - destination
+        - departureTime
+        - arrivalTime
+      properties:
+        id:
+          type: string
+          format: uuid
+        flightNumber:
+          type: string
+          example: VA801
+        origin:
+          $ref: '#/components/schemas/Airport'
+        destination:
+          $ref: '#/components/schemas/Airport'
+        departureTime:
+          type: string
+          format: date-time
+          example: "2026-01-21T09:15:00+11:00"
+        arrivalTime:
+          type: string
+          format: date-time
+          example: "2026-01-21T10:40:00+11:00"
+        boardingGate:
+          type: string
+          nullable: true
+          example: "12"
+
+    Booking:
+      type: object
+      required: [pnr, status, flight]
+      properties:
+        pnr:
+          type: string
+          minLength: 6
+          maxLength: 6
+          example: AB12CD
+        status:
+          type: string
+          enum: [CONFIRMED, CANCELLED, FLOWN, PENDING]
+          example: CONFIRMED
+        flight:
+          $ref: '#/components/schemas/Flight'
+
+    PassengerMeResponse:
+      type: object
+      required: [passenger]
+      properties:
+        passenger:
+          $ref: '#/components/schemas/Passenger'
+
+    BookingRetrieveResponse:
+      type: object
+      required: [passenger, booking]
+      properties:
+        passenger:
+          $ref: '#/components/schemas/Passenger'
+        booking:
+          $ref: '#/components/schemas/Booking'
+
+paths:
+  /api/v1/passenger/me:
+    get:
+      summary: Get the currently authenticated passenger profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Passenger profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PassengerMeResponse'
+              examples:
+                example1:
+                  value:
+                    passenger:
+                      id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
+                      firstName: "Joseph"
+                      lastName: "Nightingale"
+                      loyaltyPoints: 48399
+
+  /api/v1/bookings/retrieve:
+    get:
+      summary: Retrieve a booking using PNR and passenger last name
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: pnr
+          required: true
+          schema:
+            type: string
+            minLength: 6
+            maxLength: 6
+          example: AB12CD
+        - in: query
+          name: lastName
+          required: true
+          schema:
+            type: string
+          example: Nightingale
+      responses:
+        '200':
+          description: Booking found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingRetrieveResponse'
+              examples:
+                example1:
+                  value:
+                    passenger:
+                      id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
+                      firstName: "Joseph"
+                      lastName: "Nightingale"
+                      loyaltyPoints: 48399
+                    booking:
+                      pnr: "AB12CD"
+                      status: "CONFIRMED"
+                      flight:
+                        id: "2f3d2e21-9b6f-4a8a-88d2-24d8704fe2b0"
+                        flightNumber: "VA801"
+                        origin:
+                          code: "MEL"
+                          city: "Melbourne"
+                          country: "Australia"
+                        destination:
+                          code: "SYD"
+                          city: "Sydney"
+                          country: "Australia"
+                        departureTime: "2026-01-21T09:15:00+11:00"
+                        arrivalTime: "2026-01-21T10:40:00+11:00"
+                        boardingGate: "12"
+        '404':
+          description: Booking not found
+        '401':
+          description: Unauthorized

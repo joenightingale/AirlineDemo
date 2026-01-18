@@ -1,0 +1,73 @@
+sequenceDiagram
+autonumber
+actor Passenger as Passenger (Joseph)
+participant VAPP as Virgin Moble App
+participant APIC as IBM API Connect (Gateway)
+participant IWHI as webMethods IWHI (Integration Workflows)
+participant DB as Postgres DB (AWS)
+participant NotifSvc as webMethods Flight Notification Service
+participant Kafka as Kafka / Confluent
+participant Ops as Flight Ops App
+participant OpenAI as OpenAI API
+
+%% 1) App launch + profile
+Passenger->>VAPP: Open app (Home)
+VAPP->>APIC: GET /api/v1/passenger/me
+APIC->>IWHI: Invoke workflow: GetPassengerMe
+IWHI->>DB: SELECT passenger profile + loyalty points
+DB-->>IWHI: Passenger data
+IWHI-->>APIC: PassengerMeResponse
+APIC-->>VAPP: 200 PassengerMeResponse
+VAPP-->>Passenger: Render "Good morning, Joseph" + points
+
+%% 2) Retrieve booking
+Passenger->>VAPP: Trips -> Retrieve booking
+VAPP-->>Passenger: Show Retrieve Booking modal
+Passenger->>VAPP: Enter PNR + Last Name
+VAPP->>APIC: GET /api/v1/bookings/retrieve?pnr=AB12CD&lastName=Nightingale
+APIC->>IWHI: Invoke workflow: RetrieveBooking
+IWHI->>DB: SELECT booking + flight details by PNR + last name
+DB-->>IWHI: Booking + flight details
+IWHI-->>APIC: BookingRetrieveResponse
+APIC-->>VAPP: 200 BookingRetrieveResponse
+VAPP-->>Passenger: Home shows upcoming flight card
+
+%% 3) Create notification session + WebSocket connection
+Note over VAPP,NotifSvc: After booking exists, app registers for notifications
+VAPP->>APIC: POST /api/v1/notifications/sessions { passengerId, bookingPnr }
+APIC->>NotifSvc: Register session + state for passenger
+NotifSvc-->>APIC: { sessionId, wsUrl, expiresAt, heartbeatIntervalSec }
+APIC-->>VAPP: 201 CreateSessionResponse
+VAPP->>APIC: WS Upgrade wss://.../ws/v1/notifications?sessionId=...
+APIC->>NotifSvc: Establish WS pipe for sessionId
+NotifSvc-->>VAPP: WebSocket established (ready to receive notifications)
+
+%% 4) Flight Ops updates flight (gate change)
+Ops->>APIC: PATCH /api/v1/ops/flights/{flightId} { boardingGate: "14", reason, effectiveAt }
+APIC->>IWHI: Invoke workflow: UpdateFlightOps
+IWHI->>DB: UPDATE flights SET boarding_gate="14" WHERE flight_id=...
+DB-->>IWHI: Update OK
+
+%% 5) Produce per-passenger flight change events
+Note over IWHI,Kafka: Produce one event per affected passenger/booking
+IWHI->>Kafka: PUBLISH virgin.flight.changed.v1 (per passenger)
+Kafka-->>IWHI: ACK
+IWHI-->>APIC: 200 FlightUpdateResponse (affectedPassengers, eventTopic, correlationId)
+APIC-->>Ops: 200 FlightUpdateResponse
+
+%% 6) Notification service consumes event, personalises message, pushes to passenger
+Kafka-->>NotifSvc: CONSUME FlightChangedEvent (for passenger/PNR)
+NotifSvc->>OpenAI: Create tailored message (passenger + change context)
+OpenAI-->>NotifSvc: Tailored message text
+NotifSvc-->>APIC: Push WS message (NotificationEnvelope: flight.changed + message)
+APIC-->>VAPP: WebSocket notification delivered
+VAPP-->>Passenger: Show toast / in-app notification (gate change)
+
+%% 7) App auto-refreshes booking details
+VAPP->>APIC: GET /api/v1/bookings/retrieve?pnr=AB12CD&lastName=Nightingale (refresh)
+APIC->>IWHI: Invoke workflow: RetrieveBooking
+IWHI->>DB: SELECT latest booking + flight (new gate)
+DB-->>IWHI: Updated flight details
+IWHI-->>APIC: BookingRetrieveResponse
+APIC-->>VAPP: 200 BookingRetrieveResponse
+VAPP-->>Passenger: Home card updates (Gate now 14)

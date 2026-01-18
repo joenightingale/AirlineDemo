@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: Virgin Airlines Flight Ops API
+  version: 1.0.0
+  description: >
+    APIs used by Flight Ops systems to update flight operational data (e.g. gate changes).
+    Implemented behind IBM API Connect and fulfilled via webMethods IWHI workflows.
+servers:
+  - url: https://api.virgin-airlines.demo
+    description: Placeholder gateway base URL
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OIDC bearer token (Flight Ops client credential / user token)
+
+  schemas:
+    AirportCode:
+      type: string
+      minLength: 3
+      maxLength: 3
+      example: MEL
+
+    FlightUpdateRequest:
+      type: object
+      description: Patch-style request for updating operational flight fields.
+      properties:
+        boardingGate:
+          type: string
+          example: "14"
+        reason:
+          type: string
+          example: "Gate reallocated due to operational constraints"
+        effectiveAt:
+          type: string
+          format: date-time
+          example: "2026-01-21T06:12:00Z"
+      additionalProperties: false
+
+    Flight:
+      type: object
+      required:
+        - flightId
+        - flightNumber
+        - origin
+        - destination
+        - departureTime
+        - arrivalTime
+      properties:
+        flightId:
+          type: string
+          format: uuid
+        flightNumber:
+          type: string
+          example: VA801
+        origin:
+          $ref: '#/components/schemas/AirportCode'
+        destination:
+          $ref: '#/components/schemas/AirportCode'
+        departureTime:
+          type: string
+          format: date-time
+        arrivalTime:
+          type: string
+          format: date-time
+        boardingGate:
+          type: string
+          nullable: true
+          example: "14"
+
+    FlightUpdateResponse:
+      type: object
+      required: [flight, correlationId, affectedPassengers]
+      properties:
+        flight:
+          $ref: '#/components/schemas/Flight'
+        correlationId:
+          type: string
+          description: Returned for tracing across OTEL/OTLP
+          example: "c9d7b2d0-0bfb-49f0-9d2d-9e88f6f72e24"
+        affectedPassengers:
+          type: integer
+          description: Count of passengers/bookings impacted and notified via events
+          example: 128
+        eventTopic:
+          type: string
+          example: "virgin.flight.changed.v1"
+
+paths:
+  /api/v1/ops/flights/{flightId}:
+    patch:
+      summary: Update flight operational fields (e.g. boarding gate)
+      operationId: updateFlightOps
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: flightId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "2f3d2e21-9b6f-4a8a-88d2-24d8704fe2b0"
+        - in: header
+          name: X-Correlation-Id
+          required: false
+          schema:
+            type: string
+          description: Optional caller-provided correlation ID for end-to-end tracing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightUpdateRequest'
+            examples:
+              gateChange:
+                value:
+                  boardingGate: "14"
+                  reason: "Gate reallocated due to operational constraints"
+                  effectiveAt: "2026-01-21T06:12:00Z"
+      responses:
+        '200':
+          description: Updated flight details; change triggers passenger events (AsyncAPI)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightUpdateResponse'
+              examples:
+                ok:
+                  value:
+                    flight:
+                      flightId: "2f3d2e21-9b6f-4a8a-88d2-24d8704fe2b0"
+                      flightNumber: "VA801"
+                      origin: "MEL"
+                      destination: "SYD"
+                      departureTime: "2026-01-21T09:15:00+11:00"
+                      arrivalTime: "2026-01-21T10:40:00+11:00"
+                      boardingGate: "14"
+                    correlationId: "c9d7b2d0-0bfb-49f0-9d2d-9e88f6f72e24"
+                    affectedPassengers: 128
+                    eventTopic: "virgin.flight.changed.v1"
+        '400':
+          description: Invalid update request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Flight not found
