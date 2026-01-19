@@ -23,7 +23,7 @@ export type CreateSessionResponse = {
 
 const mockPassenger: Passenger = {
   id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1",
-  firstName: "Joseph",
+  firstName: "Joe",
   lastName: "Nightingale",
   loyaltyPoints: 48399,
 };

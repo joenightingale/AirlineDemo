@@ -110,7 +110,7 @@ components:
         message:
           type: string
           description: AI-tailored notification message (e.g. produced via OpenAI call)
-          example: "Hi Joseph, your gate for VA801 has changed from 12 to 14. Head to Gate 14 when you're ready."
+          example: "Hi Joe, your gate for VA801 has changed from 12 to 14. Head to Gate 14 when you're ready."
 
 paths:
   /api/v1/notifications/sessions:

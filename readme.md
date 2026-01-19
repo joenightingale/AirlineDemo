@@ -1,6 +1,6 @@
 # Virgin Australia Airlines Demo SPA (Mock Mobile App)
 
-This project is a browser-based Single Page Application (SPA) that mimics a native airline travel companion app.
+This project is a browser-based Single Page Application (SPA) to simulate Virgin Australia's mobile app.
 
 It demonstrates a gateway-centric “Service Management Layer” pattern:
 - REST APIs for passenger + booking retrieval (managed via IBM API Connect)
@@ -64,7 +64,7 @@ The SPA calls these HTTP endpoints (see specs for details).
 **GET** `/api/v1/passenger/me`
 
 Used for:
-- “Good morning, Joseph”
+- “Good morning, Joe”
 - Loyalty points
 
 ### Booking retrieval
@@ -131,7 +131,7 @@ After a booking is successfully retrieved (meaning the user has a trip context),
       "oldValue": "12",
       "newValue": "14"
     },
-    "message": "Hi Joseph, your gate for VA801 has changed from 12 to 14..."
+    "message": "Hi Joe, your gate for VA801 has changed from 12 to 14..."
   }
 }
 ```
@@ -160,7 +160,7 @@ When received:
 To make sure the demo never stalls if no backend is running, the SPA includes **mock fallback**.
 
 If REST calls fail:
-- Passenger is mocked as Joseph Nightingale (48,399 points)
+- Passenger is mocked as Joe Nightingale (48,399 points)
 - Booking retrieval succeeds only for:
   - PNR: `AB12CD`
   - Last name: `Nightingale`
@@ -272,7 +272,7 @@ Defines and seeds:
 - `bookings`
 
 Includes seeded data:
-- Passenger: Joseph Nightingale (48,399 points)
+- Passenger: Joe Nightingale (48,399 points)
 - Flight: VA801 MEL → SYD (21 Jan 2026)
 - Booking: PNR `AB12CD`
 

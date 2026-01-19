@@ -26,7 +26,7 @@ components:
           format: uuid
         firstName:
           type: string
-          example: Joseph
+          example: Joe
         lastName:
           type: string
           example: Nightingale
@@ -133,7 +133,7 @@ paths:
                   value:
                     passenger:
                       id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
-                      firstName: "Joseph"
+                      firstName: "Joe"
                       lastName: "Nightingale"
                       loyaltyPoints: 48399
 
@@ -169,7 +169,7 @@ paths:
                   value:
                     passenger:
                       id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
-                      firstName: "Joseph"
+                      firstName: "Joe"
                       lastName: "Nightingale"
                       loyaltyPoints: 48399
                     booking:

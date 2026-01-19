@@ -1,6 +1,6 @@
 sequenceDiagram
 autonumber
-actor Passenger as Passenger (Joseph)
+actor Passenger as Passenger (Joe)
 participant VAPP as Virgin Moble App
 participant APIC as IBM API Connect (Gateway)
 participant IWHI as webMethods IWHI (Integration Workflows)
@@ -18,7 +18,7 @@ IWHI->>DB: SELECT passenger profile + loyalty points
 DB-->>IWHI: Passenger data
 IWHI-->>APIC: PassengerMeResponse
 APIC-->>VAPP: 200 PassengerMeResponse
-VAPP-->>Passenger: Render "Good morning, Joseph" + points
+VAPP-->>Passenger: Render "Good morning, Joe" + points
 
 %% 2) Retrieve booking
 Passenger->>VAPP: Trips -> Retrieve booking

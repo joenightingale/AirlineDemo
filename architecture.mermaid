@@ -1,0 +1,36 @@
+graph TD
+    subgraph "Channels (Experience Layer)"
+        Passenger["Passenger App (SPA)<br/>(Joe)"]
+        OpsUser["Flight Ops Dashboard"]
+    end
+
+    subgraph "DMZ / Gateway Layer"
+        APIC["IBM API Connect<br/>(Security, Rate Limiting, WS Termination)"]
+    end
+
+    subgraph "Integration & Orchestration Core"
+        IWHI["IBM webMethods IWHI<br/>(Orchestration & Workflow Logic)"]
+        NotifSvc["Flight Notification Service<br/>(Stateful WS Handler)"]
+    end
+
+    subgraph "Event Mesh & Intelligence"
+        Kafka["Confluent / Kafka<br/>(Event Bus)"]
+        OpenAI["OpenAI API<br/>(GenAI Personalization)"]
+    end
+
+    subgraph "System of Record"
+        DB[("Postgres DB (AWS)<br/>Flight & Passenger Data")]
+    end
+
+    %% Flows
+    Passenger <-->|HTTPS/WSS| APIC
+    OpsUser -->|HTTPS| APIC
+    
+    APIC <-->|REST| IWHI
+    APIC <-->|WebSocket Pipe| NotifSvc
+    
+    IWHI <-->|SQL| DB
+    IWHI -->|Publish Event| Kafka
+    
+    Kafka -->|Consume Event| NotifSvc
+    NotifSvc <-->|Prompt/Response| OpenAI

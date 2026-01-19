@@ -34,7 +34,7 @@ export default function Home() {
     };
   }, [setPassenger]);
 
-  const name = passenger?.firstName ?? "Joseph";
+  const name = passenger?.firstName ?? "Joe";
   const points = passenger?.loyaltyPoints ?? 48399;
 
   return (
