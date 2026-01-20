@@ -17,11 +17,30 @@ function formatDate(dtIso: string) {
   return d.toLocaleDateString("en-AU", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
 }
 
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function formatSaleEndShort(dt: Date) {
+  // "19 Jan 2026"
+  return dt.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatSaleEndLong(dt: Date) {
+  // "19 January 2026" (used in the longer paragraph)
+  return dt.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+}
 export default function Home() {
   const passenger = useAppStore((s) => s.passenger);
   const booking = useAppStore((s) => s.booking);
   const setPassenger = useAppStore((s) => s.setPassenger);
   const openRetrieve = useAppStore((s) => s.openRetrieveModal);
+
+  const saleEnds = addDays(new Date(), 3);
+const saleEndsShort = formatSaleEndShort(saleEnds);
+const saleEndsLong = formatSaleEndLong(saleEnds);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +98,7 @@ export default function Home() {
             </div>
             <div className="mt-2 text-3xl font-semibold leading-none">The sale</div>
             <div className="mt-1 text-sm opacity-90">
-              Sale ends 19 Jan 2026. <span className="underline">T&amp;Cs apply*</span>
+              Sale ends {saleEndsShort}. <span className="underline">T&amp;Cs apply*</span>
             </div>
           </div>
           <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-2xl opacity-90">›</div>
@@ -178,7 +197,7 @@ export default function Home() {
           <div className="p-5">
             <div className="text-2xl font-semibold text-brand-ink">The sale</div>
             <div className="mt-2 text-brand-ink/70">
-              Save up to 25% off selected flights to 35 destinations. Hurry, sale ends midnight AEST 19 January 2026.*
+              Save up to 25% off selected flights to 35 destinations. Hurry, sale ends midnight AEST {saleEndsLong}.*
             </div>
             <button className="mt-4 rounded-xl border border-brand-red text-brand-red px-4 py-3 font-semibold">
               Find sale fares

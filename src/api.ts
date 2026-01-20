@@ -1,6 +1,6 @@
 import type { Passenger, Booking } from "./store";
 
-export const MOCK_TOKEN = "oidc_mock_token_123";
+export const MOCK_TOKEN = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5hY21lLWRlbW8uZXhhbXBsZSIsImF1ZCI6ImFjbWUtYWlybGluZXMtYXBpIiwic3ViIjoiNmU2ZTZjZjEtOWU1MC00YTRlLTlkOGItM2FhOGI0YzRlM2ExIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBwYXNzZW5nZXI6cmVhZCIsImlhdCI6MTczNzM1ODQwMCwiZXhwIjoxNzM3MzYyMDAwfQ.";
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "";
 const FALLBACK_TO_MOCK = true;
