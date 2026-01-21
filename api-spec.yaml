@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Virgin Airlines Travel Companion API (Mock)
+  title: Virgin Airlines Travel Companion API
   version: 1.0.0
   description: >
     Demo API for a browser-based mobile SPA. Authentication is assumed (OIDC bearer token).
@@ -134,8 +134,8 @@ paths:
                     passenger:
                       id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
                       firstName: "Joe"
-                      lastName: "Nightingale"
-                      loyaltyPoints: 48399
+                      lastName: "Bloggs"
+                      loyaltyPoints: 95000
 
   /api/v1/bookings/retrieve:
     get:
@@ -156,7 +156,7 @@ paths:
           required: true
           schema:
             type: string
-          example: Nightingale
+          example: Bloggs
       responses:
         '200':
           description: Booking found
