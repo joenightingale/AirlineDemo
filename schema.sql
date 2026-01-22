@@ -51,7 +51,7 @@ ON CONFLICT DO NOTHING;
 -- Seed passenger (Joe persona)
 INSERT INTO passengers (id, first_name, last_name, loyalty_points)
 VALUES
-  ('6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1', 'Joe', 'Nightingale', 48399)
+  ('6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1', 'Joe', 'Nightingale', 95000)
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed flight

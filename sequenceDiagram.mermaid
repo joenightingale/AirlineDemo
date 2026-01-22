@@ -34,7 +34,7 @@ VAPP-->>Passenger: Home shows upcoming flight card
 
 %% 3) WebSocket connection
 Note over VAPP,NotifSvc: After booking exists, app connects directly for notifications
-VAPP->>NotifSvc: WS Upgrade ws://4.198.139.1:5533/ws/mobileapp
+VAPP->>NotifSvc: WS Upgrade ws://4.198.139.1:5533/mobileapp
 NotifSvc-->>VAPP: WebSocket established (ready to receive notifications)
 
 %% 4) Flight Ops updates flight (gate change)

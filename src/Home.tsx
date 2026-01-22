@@ -54,7 +54,7 @@ const saleEndsLong = formatSaleEndLong(saleEnds);
   }, [setPassenger]);
 
   const name = passenger?.firstName ?? "Joe";
-  const points = passenger?.loyaltyPoints ?? 48399;
+  const points = passenger?.loyaltyPoints ?? 95000;
 
   return (
     <div className="min-h-screen bg-white pb-20">

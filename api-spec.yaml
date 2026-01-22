@@ -32,7 +32,7 @@ components:
           example: Nightingale
         loyaltyPoints:
           type: integer
-          example: 48399
+          example: 95000
 
     Airport:
       type: object
@@ -171,7 +171,7 @@ paths:
                       id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1"
                       firstName: "Joe"
                       lastName: "Nightingale"
-                      loyaltyPoints: 48399
+                      loyaltyPoints: 95000
                     booking:
                       pnr: "AB12CD"
                       status: "CONFIRMED"

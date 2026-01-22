@@ -7,7 +7,7 @@ import { BottomNav } from "./ui/BottomNav";
 import { retrieveBooking, setMockGate } from "./api";
 
 const MOBILEAPP_WS_URL =
-  (import.meta as any).env?.VITE_MOBILEAPP_WS_URL ?? "ws://4.198.139.1:5533/ws/mobileapp";
+  (import.meta as any).env?.VITE_MOBILEAPP_WS_URL ?? "ws://4.198.139.1:5533/mobileapp";
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -37,9 +37,7 @@ function ToastStack() {
               <div>
                 <div className="font-semibold text-brand-ink">{n.title}</div>
                 <div className="mt-1 text-sm text-brand-ink/70">{n.message}</div>
-                <div className="mt-2 text-xs text-brand-ink/45">
-                  {new Date(n.occurredAt).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
-                </div>
+                
               </div>
               <button
                 onClick={() => dismiss(n.id)}

@@ -12,7 +12,7 @@ const mockPassenger: Passenger = {
   id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1",
   firstName: "Joe",
   lastName: "Nightingale",
-  loyaltyPoints: 48399,
+  loyaltyPoints: 95000,
 };
 
 // mock gate is mutable so notifications can “change gate” and the follow-up retrieve returns new values

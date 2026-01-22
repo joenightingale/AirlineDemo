@@ -41,7 +41,7 @@ Database:
 4. Home updates to display the upcoming flight details.
 
 5. The app registers for real-time notifications:
-   - Establishes a WebSocket connection directly to `ws://4.198.139.1:5533/ws/mobileapp`
+   - Establishes a WebSocket connection directly to `ws://4.198.139.1:5533/mobileapp`
 
 6. In the real world:
    - Flight Ops updates a flight via a Flight Ops API on the gateway
@@ -73,7 +73,7 @@ Used for:
 - Retrieved booking + flight details shown on Home
 
 ### Notification WebSocket (Direct endpoint)
-**GET** `ws://4.198.139.1:5533/ws/mobileapp`
+**GET** `ws://4.198.139.1:5533/mobileapp`
 This is a WebSocket upgrade endpoint. The SPA connects directly to this URL.
 
 ---
@@ -94,7 +94,7 @@ The token is defined in:
 
 After a booking is successfully retrieved (meaning the user has a trip context), the SPA:
 1. Connects directly using WebSocket:
-   - `new WebSocket("ws://4.198.139.1:5533/ws/mobileapp")`
+   - `new WebSocket("ws://4.198.139.1:5533/mobileapp")`
 2. Sends an optional “hello” message:
    - `{ "type": "hello", "passengerId": "...", "bookingPnr": "..." }`
 3. Listens for outbound messages shaped like:
@@ -231,14 +231,14 @@ If your gateway/backend is on a different host/port, set `VITE_API_BASE_URL`.
 Mac/Linux:
 ```bash
 export VITE_API_BASE_URL="http://localhost:8080"
-export VITE_MOBILEAPP_WS_URL="ws://4.198.139.1:5533/ws/mobileapp"
+export VITE_MOBILEAPP_WS_URL="ws://4.198.139.1:5533/mobileapp"
 npm run dev
 ```
 
 Windows PowerShell:
 ```powershell
 $env:VITE_API_BASE_URL="http://localhost:8080"
-$env:VITE_MOBILEAPP_WS_URL="ws://4.198.139.1:5533/ws/mobileapp"
+$env:VITE_MOBILEAPP_WS_URL="ws://4.198.139.1:5533/mobileapp"
 npm run dev
 ```
 
