@@ -57,8 +57,6 @@ type AppState = {
   retrieveModalOpen: boolean;
 
   wsStatus: WsStatus;
-  wsSessionId: string | null;
-  wsUrl: string | null;
 
   notifications: NotificationItem[];
 
@@ -70,7 +68,6 @@ type AppState = {
   closeRetrieveModal: () => void;
 
   setWsStatus: (s: WsStatus) => void;
-  setWsSession: (sessionId: string | null, wsUrl: string | null) => void;
 
   addNotification: (n: NotificationItem) => void;
   dismissNotification: (id: string) => void;
@@ -85,8 +82,6 @@ export const useAppStore = create<AppState>((set) => ({
   retrieveModalOpen: false,
 
   wsStatus: "disconnected",
-  wsSessionId: null,
-  wsUrl: null,
 
   notifications: [],
 
@@ -98,7 +93,6 @@ export const useAppStore = create<AppState>((set) => ({
   closeRetrieveModal: () => set({ retrieveModalOpen: false }),
 
   setWsStatus: (s) => set({ wsStatus: s }),
-  setWsSession: (wsSessionId, wsUrl) => set({ wsSessionId, wsUrl }),
 
   addNotification: (n) =>
     set((st) => ({ notifications: [n, ...st.notifications].slice(0, 5) })),

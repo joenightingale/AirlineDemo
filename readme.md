@@ -4,7 +4,7 @@ This project is a browser-based Single Page Application (SPA) to simulate Virgin
 
 It demonstrates a gateway-centric “Service Management Layer” pattern:
 - REST APIs for passenger + booking retrieval (managed via IBM API Connect)
-- WebSocket notifications (also hosted on the gateway)
+- WebSocket notifications (direct endpoint today; can be routed via the gateway)
 - Backend orchestration/state (implemented with webMethods IWHI)
 - Async/event-driven updates (Kafka events) that drive passenger notifications
 
@@ -19,7 +19,7 @@ Frontend:
 - Lucide-React icons
 
 Backend:
-- OpenAPI specs included for REST + WebSocket session management
+- OpenAPI specs included for REST + WebSocket message schema
 - AsyncAPI spec included for Kafka flight change events
 
 Database:
@@ -41,8 +41,7 @@ Database:
 4. Home updates to display the upcoming flight details.
 
 5. The app registers for real-time notifications:
-   - Creates a notification session (REST)
-   - Establishes a WebSocket connection (wss://...) returned by the session API
+   - Establishes a WebSocket connection directly to `ws://4.198.139.1:5533/ws/mobileapp`
 
 6. In the real world:
    - Flight Ops updates a flight via a Flight Ops API on the gateway
@@ -73,21 +72,9 @@ Used for:
 Used for:
 - Retrieved booking + flight details shown on Home
 
-### Notification session management (REST)
-**POST** `/api/v1/notifications/sessions`
-
-Creates a notification session and returns a WebSocket URL:
-
-Response includes:
-- `sessionId`
-- `wsUrl` (example: `wss://.../ws/v1/notifications?sessionId=...`)
-
-**DELETE** `/api/v1/notifications/sessions/{sessionId}`
-Closes the session (optional in this SPA; implemented for completeness).
-
-### Notification WebSocket (Gateway hosted)
-**GET** `/ws/v1/notifications?sessionId=...`
-This is a WebSocket upgrade endpoint. The SPA connects using the `wsUrl` returned above.
+### Notification WebSocket (Direct endpoint)
+**GET** `ws://4.198.139.1:5533/ws/mobileapp`
+This is a WebSocket upgrade endpoint. The SPA connects directly to this URL.
 
 ---
 
@@ -106,14 +93,11 @@ The token is defined in:
 ## How the WebSocket Works (Client View)
 
 After a booking is successfully retrieved (meaning the user has a trip context), the SPA:
-1. Calls `POST /api/v1/notifications/sessions` with:
-   - `passengerId`
-   - `bookingPnr`
-2. Receives a `wsUrl` and connects using WebSocket:
-   - `new WebSocket(wsUrl)`
-3. Sends an optional “hello” message:
-   - `{ "type": "hello", "sessionId": "..." }`
-4. Listens for outbound messages shaped like:
+1. Connects directly using WebSocket:
+   - `new WebSocket("ws://4.198.139.1:5533/ws/mobileapp")`
+2. Sends an optional “hello” message:
+   - `{ "type": "hello", "passengerId": "...", "bookingPnr": "..." }`
+3. Listens for outbound messages shaped like:
 
 ```json
 {
@@ -148,8 +132,8 @@ When received:
   - Passenger + booking retrieval OpenAPI (original)
 - `openapi-flight-ops.yaml`
   - Flight Ops update endpoint (PATCH)
-- `openapi-websocket-notifications.yaml`
-  - Notification session REST + WebSocket message schema
+- `api-spec-websocket-notifications.yaml`
+  - Notification WebSocket message schema
 - `asyncapi-flight-changed.yaml`
   - Kafka topic `virgin.flight.changed.v1` event definition
 
@@ -247,18 +231,21 @@ If your gateway/backend is on a different host/port, set `VITE_API_BASE_URL`.
 Mac/Linux:
 ```bash
 export VITE_API_BASE_URL="http://localhost:8080"
+export VITE_MOBILEAPP_WS_URL="ws://4.198.139.1:5533/ws/mobileapp"
 npm run dev
 ```
 
 Windows PowerShell:
 ```powershell
 $env:VITE_API_BASE_URL="http://localhost:8080"
+$env:VITE_MOBILEAPP_WS_URL="ws://4.198.139.1:5533/ws/mobileapp"
 npm run dev
 ```
 
 Notes:
 - The SPA always sends `Authorization: Bearer oidc_mock_token_123`
 - Your APIC policies can validate or ignore it depending on your demo.
+- The WebSocket endpoint can be overridden via `VITE_MOBILEAPP_WS_URL`.
 
 ---
 
@@ -289,7 +276,7 @@ Root:
 - `schema.sql` PostgreSQL schema + demo seed data
 - `api-spec.yaml` OpenAPI for passenger + booking retrieval
 - `openapi-flight-ops.yaml` OpenAPI for Flight Ops update endpoint
-- `openapi-websocket-notifications.yaml` OpenAPI + WebSocket message schema
+- `api-spec-websocket-notifications.yaml` OpenAPI + WebSocket message schema
 - `asyncapi-flight-changed.yaml` AsyncAPI for Kafka flight change events
 - `tailwind.config.js` Tailwind theme + brand colors/shadows
 - `postcss.config.js` Tailwind PostCSS wiring
@@ -306,7 +293,7 @@ Root:
 - `Trips.tsx` Trips UI with empty state + retrieve CTA
 - `RetrieveBooking.tsx` modal overlay for booking retrieval
 - `store.ts` Zustand store (passenger/booking, ws status, notifications)
-- `api.ts` fetch wrapper + token injection + mock fallback + session creation
+- `api.ts` fetch wrapper + token injection + mock fallback for passenger/booking
 
 `src/ui/`:
 - `BottomNav.tsx` mobile-style bottom navigation
