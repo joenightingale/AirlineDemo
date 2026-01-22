@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppStore } from "./store";
 import Home from "./Home";
 import Trips from "./Trips";
@@ -71,24 +71,45 @@ export default function App() {
 
   const wsRef = useRef<WebSocket | null>(null);
   const mockTimerRef = useRef<number | null>(null);
+  const [wsUrl, setWsUrl] = useState(MOBILEAPP_WS_URL);
+  const [wsMessage, setWsMessage] = useState('{"type":"ping"}');
+  const [wsLogs, setWsLogs] = useState<
+    { id: string; timestamp: string; label: string; detail?: string }[]
+  >([]);
 
-  // Connect WebSocket when we have a booking (i.e., after retrieve booking succeeds)
-  useEffect(() => {
-    let cancelled = false;
+  const pushLog = (label: string, detail?: string) => {
+    setWsLogs((logs) => [
+      { id: crypto.randomUUID(), timestamp: new Date().toLocaleTimeString(), label, detail },
+      ...logs,
+    ]);
+  };
 
-    async function connect() {
-      if (!booking || !passenger) return;
-      if (wsRef.current) return; // already connected/connecting
+  const cleanupMockTimer = () => {
+    if (mockTimerRef.current != null) {
+      window.clearTimeout(mockTimerRef.current);
+      mockTimerRef.current = null;
+    }
+  };
 
-      setWsStatus("connecting");
+  const connectWebSocket = () => {
+    if (wsRef.current) {
+      pushLog("Already connected or connecting.");
+      return;
+    }
 
-      try {
-        const ws = new WebSocket(MOBILEAPP_WS_URL);
-        wsRef.current = ws;
+    cleanupMockTimer();
+    setWsStatus("connecting");
+    pushLog("Connecting", wsUrl);
 
-        ws.onopen = () => {
-          setWsStatus("connected");
-          // optional hello, safe even if server ignores
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setWsStatus("connected");
+        pushLog("Connected");
+
+        if (passenger && booking) {
           ws.send(
             JSON.stringify({
               type: "hello",
@@ -97,123 +118,127 @@ export default function App() {
               device: { clientType: "spa", userAgent: navigator.userAgent },
             }),
           );
-        };
+          pushLog("Sent hello payload", "Included passenger + booking metadata.");
+        }
+      };
 
-        ws.onerror = () => {
-          setWsStatus("error");
-          // If WS fails (demo fallback), simulate a gate change notification
-          if (mockTimerRef.current == null) {
-            mockTimerRef.current = window.setTimeout(async () => {
-              // simulate gate change 12 -> 14
-              const oldGate = booking.flight.boardingGate ?? "12";
-              const newGate = oldGate === "14" ? "12" : "14";
+      ws.onerror = () => {
+        setWsStatus("error");
+        pushLog("WebSocket error");
 
-              // update mock backend state so retrieveBooking returns new gate
-              setMockGate(newGate);
+        if (booking && passenger && mockTimerRef.current == null) {
+          mockTimerRef.current = window.setTimeout(async () => {
+            const oldGate = booking.flight.boardingGate ?? "12";
+            const newGate = oldGate === "14" ? "12" : "14";
 
-              const occurredAt = new Date().toISOString();
-              const correlationId = crypto.randomUUID();
+            setMockGate(newGate);
 
-              addNotification({
-                id: crypto.randomUUID(),
-                eventType: "flight.changed",
-                title: `Gate change for ${booking.flight.flightNumber}`,
-                message: `Hi ${passenger.firstName}, your gate for ${booking.flight.flightNumber} has changed from ${oldGate} to ${newGate}. Head to Gate ${newGate} when you're ready.`,
-                occurredAt,
-                correlationId,
-                payload: {
-                  passengerId: passenger.id,
-                  bookingPnr: booking.pnr,
-                  flightId: booking.flight.id,
-                  flightNumber: booking.flight.flightNumber,
-                  change: { field: "boardingGate", oldValue: oldGate, newValue: newGate },
-                },
-              });
+            const occurredAt = new Date().toISOString();
+            const correlationId = crypto.randomUUID();
 
-              // Step 13: refresh booking via retrieve endpoint
-              try {
-                const refreshed = await retrieveBooking(booking.pnr, passenger.lastName);
-                setPassenger(refreshed.passenger);
-                setBooking(refreshed.booking);
-              } catch {
-                // ignore
-              }
-            }, 6500);
-          }
-        };
+            addNotification({
+              id: crypto.randomUUID(),
+              eventType: "flight.changed",
+              title: `Gate change for ${booking.flight.flightNumber}`,
+              message: `Hi ${passenger.firstName}, your gate for ${booking.flight.flightNumber} has changed from ${oldGate} to ${newGate}. Head to Gate ${newGate} when you're ready.`,
+              occurredAt,
+              correlationId,
+              payload: {
+                passengerId: passenger.id,
+                bookingPnr: booking.pnr,
+                flightId: booking.flight.id,
+                flightNumber: booking.flight.flightNumber,
+                change: { field: "boardingGate", oldValue: oldGate, newValue: newGate },
+              },
+            });
 
-        ws.onmessage = async (evt) => {
-          try {
-            const data = JSON.parse(evt.data);
-            if (data?.type === "notification" && data?.eventType === "flight.changed") {
-              const occurredAt = data.occurredAt ?? new Date().toISOString();
-              const correlationId = data.correlationId ?? crypto.randomUUID();
-              const payload = data.payload;
-
-              const oldGate = payload?.change?.oldValue ?? "";
-              const newGate = payload?.change?.newValue ?? "";
-              const flightNumber = payload?.flightNumber ?? booking.flight.flightNumber;
-
-              // Keep mock gate in sync if running without backend
-              if (newGate) setMockGate(String(newGate));
-
-              addNotification({
-                id: crypto.randomUUID(),
-                eventType: "flight.changed",
-                title: `Gate change for ${flightNumber}`,
-                message: payload?.message ?? data.message ?? `Gate changed from ${oldGate} to ${newGate}.`,
-                occurredAt,
-                correlationId,
-                payload: {
-                  passengerId: payload.passengerId,
-                  bookingPnr: payload.bookingPnr,
-                  flightId: payload.flightId,
-                  flightNumber,
-                  change: payload.change,
-                },
-              });
-
-              // Step 13: re-get flight details after notification
+            try {
               const refreshed = await retrieveBooking(booking.pnr, passenger.lastName);
               setPassenger(refreshed.passenger);
               setBooking(refreshed.booking);
+            } catch {
+              // ignore
             }
-          } catch {
-            // ignore non-json messages
+          }, 6500);
+          pushLog("Mock notification fallback armed");
+        }
+      };
+
+      ws.onmessage = async (evt) => {
+        pushLog("Message received", typeof evt.data === "string" ? evt.data : "Binary payload");
+        try {
+          const data = JSON.parse(evt.data);
+          if (data?.type === "notification" && data?.eventType === "flight.changed" && booking) {
+            const occurredAt = data.occurredAt ?? new Date().toISOString();
+            const correlationId = data.correlationId ?? crypto.randomUUID();
+            const payload = data.payload;
+
+            const oldGate = payload?.change?.oldValue ?? "";
+            const newGate = payload?.change?.newValue ?? "";
+            const flightNumber = payload?.flightNumber ?? booking.flight.flightNumber;
+
+            if (newGate) setMockGate(String(newGate));
+
+            addNotification({
+              id: crypto.randomUUID(),
+              eventType: "flight.changed",
+              title: `Gate change for ${flightNumber}`,
+              message: payload?.message ?? data.message ?? `Gate changed from ${oldGate} to ${newGate}.`,
+              occurredAt,
+              correlationId,
+              payload: {
+                passengerId: payload.passengerId,
+                bookingPnr: payload.bookingPnr,
+                flightId: payload.flightId,
+                flightNumber,
+                change: payload.change,
+              },
+            });
+
+            const refreshed = await retrieveBooking(booking.pnr, passenger.lastName);
+            setPassenger(refreshed.passenger);
+            setBooking(refreshed.booking);
           }
-        };
+        } catch {
+          // ignore non-json messages
+        }
+      };
 
-        ws.onclose = () => {
-          wsRef.current = null;
-          setWsStatus("disconnected");
-        };
-      } catch {
-        setWsStatus("error");
-      }
+      ws.onclose = (evt) => {
+        wsRef.current = null;
+        setWsStatus("disconnected");
+        pushLog("Disconnected", `Code ${evt.code}${evt.reason ? `: ${evt.reason}` : ""}`);
+      };
+    } catch {
+      setWsStatus("error");
+      pushLog("Connection failed");
     }
+  };
 
-    // connect only after booking exists
-    connect();
+  const disconnectWebSocket = () => {
+    cleanupMockTimer();
+    if (!wsRef.current) {
+      pushLog("No active WebSocket to disconnect.");
+      setWsStatus("disconnected");
+      return;
+    }
+    pushLog("Closing connection");
+    wsRef.current.close();
+  };
 
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    booking,
-    passenger,
-    addNotification,
-    setPassenger,
-    setBooking,
-    setWsStatus,
-  ]);
+  const sendWsMessage = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      pushLog("Cannot send message", "Socket not open.");
+      return;
+    }
+    wsRef.current.send(wsMessage);
+    pushLog("Message sent", wsMessage);
+  };
 
   // Cleanup WS when booking cleared (optional), or when app unmounts
   useEffect(() => {
     return () => {
-      if (mockTimerRef.current != null) {
-        window.clearTimeout(mockTimerRef.current);
-        mockTimerRef.current = null;
-      }
+      cleanupMockTimer();
       const ws = wsRef.current;
       wsRef.current = null;
       if (ws) ws.close();
@@ -233,9 +258,128 @@ export default function App() {
       {tab === "more" && (
         <div className="min-h-screen bg-white pb-20">
           <div className="px-5 pt-10">
-            <h1 className="text-5xl font-semibold text-brand-ink">More</h1>
-            <div className="mt-6 text-brand-ink/70">
-              WebSocket status: <span className="font-semibold text-brand-ink">{wsStatus}</span>
+            <h1 className="text-5xl font-semibold text-brand-ink">WebSockets Lab</h1>
+            <div className="mt-3 text-brand-ink/70">
+              Test connectivity, manage the socket lifecycle, and inspect live traffic.
+            </div>
+
+            <div className="mt-8 space-y-6">
+              <div className="rounded-3xl border border-gray-100 bg-brand-soft/30 p-5 shadow-card">
+                <div className="text-sm font-semibold text-brand-ink">Connection</div>
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-ink/70">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 shadow-sm">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        wsStatus === "connected"
+                          ? "bg-green-500"
+                          : wsStatus === "connecting"
+                            ? "bg-amber-400"
+                            : wsStatus === "error"
+                              ? "bg-red-500"
+                              : "bg-gray-300"
+                      }`}
+                    />
+                    {wsStatus}
+                  </span>
+                  {wsRef.current?.url && (
+                    <span className="text-xs text-brand-ink/50">Active URL: {wsRef.current.url}</span>
+                  )}
+                </div>
+
+                <label className="mt-4 block text-xs font-semibold text-brand-ink/60 uppercase tracking-wide">
+                  WebSocket URL
+                </label>
+                <input
+                  value={wsUrl}
+                  onChange={(event) => setWsUrl(event.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-ink shadow-sm focus:border-brand-sky focus:outline-none"
+                  placeholder="ws://host:port/path"
+                />
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    onClick={connectWebSocket}
+                    className="rounded-full bg-brand-ink px-5 py-2 text-sm font-semibold text-white shadow-sm"
+                  >
+                    Connect
+                  </button>
+                  <button
+                    onClick={disconnectWebSocket}
+                    className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-brand-ink shadow-sm"
+                  >
+                    Disconnect
+                  </button>
+                  <button
+                    onClick={() => setWsLogs([])}
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-brand-ink/70"
+                  >
+                    Clear log
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
+                <div className="text-sm font-semibold text-brand-ink">Send a test message</div>
+                <textarea
+                  value={wsMessage}
+                  onChange={(event) => setWsMessage(event.target.value)}
+                  rows={4}
+                  className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-ink shadow-sm focus:border-brand-sky focus:outline-none"
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-brand-ink/60">
+                  <button
+                    onClick={sendWsMessage}
+                    className="rounded-full bg-brand-sky px-5 py-2 text-sm font-semibold text-white shadow-sm"
+                  >
+                    Send
+                  </button>
+                  <button
+                    onClick={() => setWsMessage('{"type":"ping"}')}
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-brand-ink/70"
+                  >
+                    Insert ping
+                  </button>
+                  <button
+                    onClick={() =>
+                      setWsMessage(
+                        JSON.stringify(
+                          {
+                            type: "notification",
+                            eventType: "flight.changed",
+                            message: "Gate changed from 12 to 14.",
+                          },
+                          null,
+                          2,
+                        ),
+                      )
+                    }
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-brand-ink/70"
+                  >
+                    Insert sample notification
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-brand-ink">Debug log</div>
+                  <div className="text-xs text-brand-ink/50">{wsLogs.length} entries</div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {wsLogs.length === 0 && (
+                    <div className="text-sm text-brand-ink/50">No WebSocket activity yet.</div>
+                  )}
+                  {wsLogs.map((log) => (
+                    <div key={log.id} className="rounded-2xl border border-gray-100 bg-brand-soft/40 px-4 py-3">
+                      <div className="flex items-center justify-between text-xs text-brand-ink/60">
+                        <span>{log.timestamp}</span>
+                        <span className="font-semibold text-brand-ink">{log.label}</span>
+                      </div>
+                      {log.detail && <div className="mt-2 text-xs text-brand-ink/70">{log.detail}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
