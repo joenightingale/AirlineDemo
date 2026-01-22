@@ -257,49 +257,13 @@ export default function App() {
       {tab === "specials" && <Placeholder title="Specials" />}
       {tab === "more" && (
         <div className="min-h-screen bg-white pb-20">
-          <div className="px-5 pt-8">
-            <h1 className="text-4xl font-semibold text-brand-ink">WebSockets Lab</h1>
-            <div className="mt-2 text-brand-ink/70">
+          <div className="px-5 pt-10">
+            <h1 className="text-5xl font-semibold text-brand-ink">WebSockets Lab</h1>
+            <div className="mt-3 text-brand-ink/70">
               Test connectivity, manage the socket lifecycle, and inspect live traffic.
             </div>
 
-            <div className="mt-5 rounded-3xl border border-gray-100 bg-white p-4 shadow-card">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3 text-sm text-brand-ink/70">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft/60 px-3 py-1 text-xs">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        wsStatus === "connected"
-                          ? "bg-green-500"
-                          : wsStatus === "connecting"
-                            ? "bg-amber-400"
-                            : wsStatus === "error"
-                              ? "bg-red-500"
-                              : "bg-gray-300"
-                      }`}
-                    />
-                    {wsStatus}
-                  </span>
-                  <span className="text-xs text-brand-ink/50">{wsLogs.length} log entries</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={connectWebSocket}
-                    className="rounded-full bg-brand-ink px-4 py-2 text-xs font-semibold text-white shadow-sm"
-                  >
-                    Connect
-                  </button>
-                  <button
-                    onClick={disconnectWebSocket}
-                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-brand-ink shadow-sm"
-                  >
-                    Disconnect
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-6">
+            <div className="mt-8 space-y-6">
               <div className="rounded-3xl border border-gray-100 bg-brand-soft/30 p-5 shadow-card">
                 <div className="text-sm font-semibold text-brand-ink">Connection</div>
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-ink/70">
