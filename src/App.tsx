@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAppStore } from "./store";
 import Home from "./Home";
 import Trips from "./Trips";
@@ -77,21 +77,21 @@ export default function App() {
     { id: string; timestamp: string; label: string; detail?: string }[]
   >([]);
 
-  const pushLog = (label: string, detail?: string) => {
+  const pushLog = useCallback((label: string, detail?: string) => {
     setWsLogs((logs) => [
       { id: crypto.randomUUID(), timestamp: new Date().toLocaleTimeString(), label, detail },
       ...logs,
     ]);
-  };
+  }, []);
 
-  const cleanupMockTimer = () => {
+  const cleanupMockTimer = useCallback(() => {
     if (mockTimerRef.current != null) {
       window.clearTimeout(mockTimerRef.current);
       mockTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const connectWebSocket = () => {
+  const connectWebSocket = useCallback(() => {
     if (wsRef.current) {
       pushLog("Already connected or connecting.");
       return;
@@ -125,43 +125,6 @@ export default function App() {
       ws.onerror = () => {
         setWsStatus("error");
         pushLog("WebSocket error");
-
-        if (booking && passenger && mockTimerRef.current == null) {
-          mockTimerRef.current = window.setTimeout(async () => {
-            const oldGate = booking.flight.boardingGate ?? "12";
-            const newGate = oldGate === "14" ? "12" : "14";
-
-            setMockGate(newGate);
-
-            const occurredAt = new Date().toISOString();
-            const correlationId = crypto.randomUUID();
-
-            addNotification({
-              id: crypto.randomUUID(),
-              eventType: "flight.changed",
-              title: `Gate change for ${booking.flight.flightNumber}`,
-              message: `Hi ${passenger.firstName}, your gate for ${booking.flight.flightNumber} has changed from ${oldGate} to ${newGate}. Head to Gate ${newGate} when you're ready.`,
-              occurredAt,
-              correlationId,
-              payload: {
-                passengerId: passenger.id,
-                bookingPnr: booking.pnr,
-                flightId: booking.flight.id,
-                flightNumber: booking.flight.flightNumber,
-                change: { field: "boardingGate", oldValue: oldGate, newValue: newGate },
-              },
-            });
-
-            try {
-              const refreshed = await retrieveBooking(booking.pnr, passenger.lastName);
-              setPassenger(refreshed.passenger);
-              setBooking(refreshed.booking);
-            } catch {
-              // ignore
-            }
-          }, 6500);
-          pushLog("Mock notification fallback armed");
-        }
       };
 
       ws.onmessage = async (evt) => {
@@ -213,9 +176,19 @@ export default function App() {
       setWsStatus("error");
       pushLog("Connection failed");
     }
-  };
+  }, [
+    addNotification,
+    booking,
+    passenger,
+    pushLog,
+    setBooking,
+    setPassenger,
+    setWsStatus,
+    wsUrl,
+    cleanupMockTimer,
+  ]);
 
-  const disconnectWebSocket = () => {
+  const disconnectWebSocket = useCallback(() => {
     cleanupMockTimer();
     if (!wsRef.current) {
       pushLog("No active WebSocket to disconnect.");
@@ -224,7 +197,54 @@ export default function App() {
     }
     pushLog("Closing connection");
     wsRef.current.close();
-  };
+  }, [cleanupMockTimer, pushLog, setWsStatus]);
+
+  const scheduleMockNotification = useCallback(() => {
+    if (!booking || !passenger) {
+      pushLog("Cannot schedule notification", "Retrieve your booking first.");
+      return;
+    }
+    if (mockTimerRef.current != null) {
+      pushLog("Mock notification already scheduled.");
+      return;
+    }
+
+    pushLog("Mock notification scheduled", "Delivery in 5s.");
+    mockTimerRef.current = window.setTimeout(async () => {
+      mockTimerRef.current = null;
+      const oldGate = booking.flight.boardingGate ?? "12";
+      const newGate = oldGate === "14" ? "12" : "14";
+
+      setMockGate(newGate);
+
+      const occurredAt = new Date().toISOString();
+      const correlationId = crypto.randomUUID();
+
+      addNotification({
+        id: crypto.randomUUID(),
+        eventType: "flight.changed",
+        title: `Gate change for ${booking.flight.flightNumber}`,
+        message: `Hi ${passenger.firstName}, your gate for ${booking.flight.flightNumber} has changed from ${oldGate} to ${newGate}. Head to Gate ${newGate} when you're ready.`,
+        occurredAt,
+        correlationId,
+        payload: {
+          passengerId: passenger.id,
+          bookingPnr: booking.pnr,
+          flightId: booking.flight.id,
+          flightNumber: booking.flight.flightNumber,
+          change: { field: "boardingGate", oldValue: oldGate, newValue: newGate },
+        },
+      });
+
+      try {
+        const refreshed = await retrieveBooking(booking.pnr, passenger.lastName);
+        setPassenger(refreshed.passenger);
+        setBooking(refreshed.booking);
+      } catch {
+        // ignore
+      }
+    }, 5000);
+  }, [addNotification, booking, passenger, pushLog, setBooking, setPassenger]);
 
   const sendWsMessage = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -245,7 +265,13 @@ export default function App() {
 
       // WS closes on teardown; no session cleanup required.
     };
-  }, []);
+  }, [cleanupMockTimer]);
+
+  useEffect(() => {
+    if (passenger) {
+      connectWebSocket();
+    }
+  }, [connectWebSocket, passenger]);
 
   return (
     <div className="mx-auto max-w-md relative">
@@ -316,6 +342,19 @@ export default function App() {
                     Clear log
                   </button>
                 </div>
+              </div>
+
+              <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
+                <div className="text-sm font-semibold text-brand-ink">Notifications demo</div>
+                <div className="mt-2 text-sm text-brand-ink/70">
+                  Trigger a simulated gate-change notification from the demo backend.
+                </div>
+                <button
+                  onClick={scheduleMockNotification}
+                  className="mt-4 rounded-full bg-brand-red px-5 py-2 text-sm font-semibold text-white shadow-sm"
+                >
+                  Deliver notification in 5s
+                </button>
               </div>
 
               <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
