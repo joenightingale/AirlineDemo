@@ -32,14 +32,9 @@ IWHI-->>APIC: BookingRetrieveResponse
 APIC-->>VAPP: 200 BookingRetrieveResponse
 VAPP-->>Passenger: Home shows upcoming flight card
 
-%% 3) Create notification session + WebSocket connection
-Note over VAPP,NotifSvc: After booking exists, app registers for notifications
-VAPP->>APIC: POST /api/v1/notifications/sessions { passengerId, bookingPnr }
-APIC->>NotifSvc: Register session + state for passenger
-NotifSvc-->>APIC: { sessionId, wsUrl, expiresAt, heartbeatIntervalSec }
-APIC-->>VAPP: 201 CreateSessionResponse
-VAPP->>APIC: WS Upgrade wss://.../ws/v1/notifications?sessionId=...
-APIC->>NotifSvc: Establish WS pipe for sessionId
+%% 3) WebSocket connection
+Note over VAPP,NotifSvc: After booking exists, app connects directly for notifications
+VAPP->>NotifSvc: WS Upgrade ws://4.198.139.1:5533/ws/mobileapp
 NotifSvc-->>VAPP: WebSocket established (ready to receive notifications)
 
 %% 4) Flight Ops updates flight (gate change)
@@ -59,8 +54,7 @@ APIC-->>Ops: 200 FlightUpdateResponse
 Kafka-->>NotifSvc: CONSUME FlightChangedEvent (for passenger/PNR)
 NotifSvc->>OpenAI: Create tailored message (passenger + change context)
 OpenAI-->>NotifSvc: Tailored message text
-NotifSvc-->>APIC: Push WS message (NotificationEnvelope: flight.changed + message)
-APIC-->>VAPP: WebSocket notification delivered
+NotifSvc-->>VAPP: Push WS message (NotificationEnvelope: flight.changed + message)
 VAPP-->>Passenger: Show toast / in-app notification (gate change)
 
 %% 7) App auto-refreshes booking details

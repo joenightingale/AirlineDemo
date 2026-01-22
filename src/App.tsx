@@ -4,12 +4,10 @@ import Home from "./Home";
 import Trips from "./Trips";
 import RetrieveBooking from "./RetrieveBooking";
 import { BottomNav } from "./ui/BottomNav";
-import {
-  createNotificationSession,
-  closeNotificationSession,
-  retrieveBooking,
-  setMockGate,
-} from "./api";
+import { retrieveBooking, setMockGate } from "./api";
+
+const MOBILEAPP_WS_URL =
+  (import.meta as any).env?.VITE_MOBILEAPP_WS_URL ?? "ws://4.198.139.1:5533/ws/mobileapp";
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -68,7 +66,6 @@ export default function App() {
 
   const wsStatus = useAppStore((s) => s.wsStatus);
   const setWsStatus = useAppStore((s) => s.setWsStatus);
-  const setWsSession = useAppStore((s) => s.setWsSession);
 
   const addNotification = useAppStore((s) => s.addNotification);
 
@@ -86,23 +83,20 @@ export default function App() {
       setWsStatus("connecting");
 
       try {
-        const session = await createNotificationSession({
-          passengerId: passenger.id,
-          bookingPnr: booking.pnr,
-          device: { clientType: "spa", userAgent: navigator.userAgent },
-        });
-
-        if (cancelled) return;
-
-        setWsSession(session.sessionId, session.wsUrl);
-
-        const ws = new WebSocket(session.wsUrl);
+        const ws = new WebSocket(MOBILEAPP_WS_URL);
         wsRef.current = ws;
 
         ws.onopen = () => {
           setWsStatus("connected");
           // optional hello, safe even if server ignores
-          ws.send(JSON.stringify({ type: "hello", sessionId: session.sessionId }));
+          ws.send(
+            JSON.stringify({
+              type: "hello",
+              passengerId: passenger.id,
+              bookingPnr: booking.pnr,
+              device: { clientType: "spa", userAgent: navigator.userAgent },
+            }),
+          );
         };
 
         ws.onerror = () => {
@@ -211,7 +205,6 @@ export default function App() {
     setPassenger,
     setBooking,
     setWsStatus,
-    setWsSession,
   ]);
 
   // Cleanup WS when booking cleared (optional), or when app unmounts
@@ -225,8 +218,7 @@ export default function App() {
       wsRef.current = null;
       if (ws) ws.close();
 
-      // best-effort session close if you want (requires sessionId stored)
-      // (kept minimal here to avoid blocking on errors)
+      // WS closes on teardown; no session cleanup required.
     };
   }, []);
 

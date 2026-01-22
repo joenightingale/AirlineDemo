@@ -8,19 +8,6 @@ const FALLBACK_TO_MOCK = true;
 type PassengerMeResponse = { passenger: Passenger };
 type BookingRetrieveResponse = { passenger: Passenger; booking: Booking };
 
-export type CreateSessionRequest = {
-  passengerId: string;
-  bookingPnr: string;
-  device?: { clientType?: string; userAgent?: string };
-};
-
-export type CreateSessionResponse = {
-  sessionId: string;
-  wsUrl: string;
-  expiresAt: string;
-  heartbeatIntervalSec: number;
-};
-
 const mockPassenger: Passenger = {
   id: "6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1",
   firstName: "Joe",
@@ -99,29 +86,4 @@ export async function retrieveBooking(pnr: string, lastName: string): Promise<Bo
 
     return { passenger: mockPassenger, booking: getMockBooking() };
   }
-}
-
-export async function createNotificationSession(req: CreateSessionRequest): Promise<CreateSessionResponse> {
-  try {
-    return await apiRequest<CreateSessionResponse>("/api/v1/notifications/sessions", {
-      method: "POST",
-      body: JSON.stringify(req),
-    });
-  } catch (e) {
-    if (!FALLBACK_TO_MOCK) throw e;
-
-    // Mock: return a wsUrl that will fail to connect, but the app will simulate an incoming notification on error.
-    return {
-      sessionId: "00000000-0000-0000-0000-000000000001",
-      wsUrl: "ws://localhost:0/ws/v1/notifications?sessionId=00000000-0000-0000-0000-000000000001",
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-      heartbeatIntervalSec: 25,
-    };
-  }
-}
-
-export async function closeNotificationSession(sessionId: string): Promise<void> {
-  await apiRequest<void>(`/api/v1/notifications/sessions/${encodeURIComponent(sessionId)}`, {
-    method: "DELETE",
-  });
 }
