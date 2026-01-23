@@ -8,6 +8,7 @@ import { retrieveBooking, setMockGate } from "./api";
 
 const MOBILEAPP_WS_URL =
   (import.meta as any).env?.VITE_MOBILEAPP_WS_URL ?? "ws://4.198.139.1:5533/mobileapp";
+const SHOW_WS_DEMOS = true;
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -288,72 +289,76 @@ export default function App() {
             </div>
 
             <div className="mt-8 space-y-6">
-              <div className="rounded-3xl border border-gray-100 bg-brand-soft/30 p-5 shadow-card">
-                <div className="text-sm font-semibold text-brand-ink">Connection</div>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-ink/70">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 shadow-sm">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        wsStatus === "connected"
-                          ? "bg-green-500"
-                          : wsStatus === "connecting"
-                            ? "bg-amber-400"
-                            : wsStatus === "error"
-                              ? "bg-red-500"
-                              : "bg-gray-300"
-                      }`}
+              {SHOW_WS_DEMOS && (
+                <>
+                  <div className="rounded-3xl border border-gray-100 bg-brand-soft/30 p-5 shadow-card">
+                    <div className="text-sm font-semibold text-brand-ink">Connection</div>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-ink/70">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 shadow-sm">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${
+                            wsStatus === "connected"
+                              ? "bg-green-500"
+                              : wsStatus === "connecting"
+                                ? "bg-amber-400"
+                                : wsStatus === "error"
+                                  ? "bg-red-500"
+                                  : "bg-gray-300"
+                          }`}
+                        />
+                        {wsStatus}
+                      </span>
+                      {wsRef.current?.url && (
+                        <span className="text-xs text-brand-ink/50">Active URL: {wsRef.current.url}</span>
+                      )}
+                    </div>
+
+                    <label className="mt-4 block text-xs font-semibold text-brand-ink/60 uppercase tracking-wide">
+                      WebSocket URL
+                    </label>
+                    <input
+                      value={wsUrl}
+                      onChange={(event) => setWsUrl(event.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-ink shadow-sm focus:border-brand-sky focus:outline-none"
+                      placeholder="ws://host:port/path"
                     />
-                    {wsStatus}
-                  </span>
-                  {wsRef.current?.url && (
-                    <span className="text-xs text-brand-ink/50">Active URL: {wsRef.current.url}</span>
-                  )}
-                </div>
 
-                <label className="mt-4 block text-xs font-semibold text-brand-ink/60 uppercase tracking-wide">
-                  WebSocket URL
-                </label>
-                <input
-                  value={wsUrl}
-                  onChange={(event) => setWsUrl(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-ink shadow-sm focus:border-brand-sky focus:outline-none"
-                  placeholder="ws://host:port/path"
-                />
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <button
+                        onClick={connectWebSocket}
+                        className="rounded-full bg-brand-ink px-5 py-2 text-sm font-semibold text-white shadow-sm"
+                      >
+                        Connect
+                      </button>
+                      <button
+                        onClick={disconnectWebSocket}
+                        className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-brand-ink shadow-sm"
+                      >
+                        Disconnect
+                      </button>
+                      <button
+                        onClick={() => setWsLogs([])}
+                        className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-brand-ink/70"
+                      >
+                        Clear log
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={connectWebSocket}
-                    className="rounded-full bg-brand-ink px-5 py-2 text-sm font-semibold text-white shadow-sm"
-                  >
-                    Connect
-                  </button>
-                  <button
-                    onClick={disconnectWebSocket}
-                    className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-brand-ink shadow-sm"
-                  >
-                    Disconnect
-                  </button>
-                  <button
-                    onClick={() => setWsLogs([])}
-                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-brand-ink/70"
-                  >
-                    Clear log
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
-                <div className="text-sm font-semibold text-brand-ink">Notifications demo</div>
-                <div className="mt-2 text-sm text-brand-ink/70">
-                  Trigger a simulated gate-change notification from the demo backend.
-                </div>
-                <button
-                  onClick={scheduleMockNotification}
-                  className="mt-4 rounded-full bg-brand-red px-5 py-2 text-sm font-semibold text-white shadow-sm"
-                >
-                  Deliver notification in 5s
-                </button>
-              </div>
+                  <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
+                    <div className="text-sm font-semibold text-brand-ink">Notifications demo</div>
+                    <div className="mt-2 text-sm text-brand-ink/70">
+                      Trigger a simulated gate-change notification from the demo backend.
+                    </div>
+                    <button
+                      onClick={scheduleMockNotification}
+                      className="mt-4 rounded-full bg-brand-red px-5 py-2 text-sm font-semibold text-white shadow-sm"
+                    >
+                      Deliver notification in 5s
+                    </button>
+                  </div>
+                </>
+              )}
 
               <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-card">
                 <div className="text-sm font-semibold text-brand-ink">Send a test message</div>
