@@ -37,10 +37,11 @@ export default function Home() {
   const booking = useAppStore((s) => s.booking);
   const setPassenger = useAppStore((s) => s.setPassenger);
   const openRetrieve = useAppStore((s) => s.openRetrieveModal);
+  const wsStatus = useAppStore((s) => s.wsStatus);
 
   const saleEnds = addDays(new Date(), 3);
-const saleEndsShort = formatSaleEndShort(saleEnds);
-const saleEndsLong = formatSaleEndLong(saleEnds);
+  const saleEndsShort = formatSaleEndShort(saleEnds);
+  const saleEndsLong = formatSaleEndLong(saleEnds);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,9 +74,28 @@ const saleEndsLong = formatSaleEndLong(saleEnds);
             </div>
           </div>
 
-          <button className="h-10 w-10 rounded-full bg-white/15 flex items-center justify-center">
-            <span className="text-xl">👤</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20"
+              title={`WebSocket: ${wsStatus}`}
+              aria-label={`WebSocket status ${wsStatus}`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  wsStatus === "connected"
+                    ? "bg-green-400"
+                    : wsStatus === "connecting"
+                      ? "bg-amber-300"
+                      : wsStatus === "error"
+                        ? "bg-red-400"
+                        : "bg-white/60"
+                }`}
+              />
+            </div>
+            <button className="h-10 w-10 rounded-full bg-white/15 flex items-center justify-center">
+              <span className="text-xl">👤</span>
+            </button>
+          </div>
         </div>
 
         {/* QR icon block (right) */}
