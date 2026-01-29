@@ -1,0 +1,31 @@
+asyncapi: 2.1.0
+info:
+  title: fchanges
+  version: 1.0.0
+  contact:
+    email: pjessup@au1.ibm.com
+channels:
+  fchanges:
+    bindings:
+      kafka:
+        partitions: 1
+        replicas: 1
+    subscribe:
+      message:
+        examples:
+          - payload: {"eventId":"9d1e3a4f-9b33-4b2d-8f7c-49b2c7a6f115","eventType":"flight.changed","occurredAt":"2026-01-21T06:12:11Z","correlationId":"c9d7b2d0-0bfb-49f0-9d2d-9e88f6f72e24","sourceSystem":"flight-ops","passenger":{"passengerId":"6e6e6cf1-9e50-4a4e-9d8b-3aa8b4c4e3a1","bookingPnr":"AB12CD","lastName":"Nightingale"},"flight":{"flightId":"2f3d2e21-9b6f-4a8a-88d2-24d8704fe2b0","flightNumber":"VA801","origin":"MEL","destination":"SYD","departureTime":"2026-01-21T09:15:00+11:00"},"change":{"field":"boardingGate","oldValue":"12","newValue":"14","reason":"Gate reallocated due to operational constraints"}}
+        payload: {"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"eventId":{"type":"string"},"eventType":{"type":"string"},"occurredAt":{"type":"string"},"correlationId":{"type":"string"},"sourceSystem":{"type":"string"},"passenger":{"type":"object","properties":{"passengerId":{"type":"string"},"bookingPnr":{"type":"string"},"lastName":{"type":"string"}},"required":["passengerId","bookingPnr","lastName"]},"flight":{"type":"object","properties":{"flightId":{"type":"string"},"flightNumber":{"type":"string"},"origin":{"type":"string"},"destination":{"type":"string"},"departureTime":{"type":"string"}},"required":["flightId","flightNumber","origin","destination","departureTime"]},"change":{"type":"object","properties":{"field":{"type":"string"},"oldValue":{"type":"string"},"newValue":{"type":"string"},"reason":{"type":"string"}},"required":["field","oldValue","newValue","reason"]}},"required":["eventId","eventType","occurredAt","correlationId","sourceSystem","passenger","flight","change"]}
+        schemaFormat: application/schema+json;version=draft-07
+        description: |-
+          Change notifications for flights
+servers:
+  VirginEvents2:
+    url: virginevents2-gateway3-ibm-egw-rt-1-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-10-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-11-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-12-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-13-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-14-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-15-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-16-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-17-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-18-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-19-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-2-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-3-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-4-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-5-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-6-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-7-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-8-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-9-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443,virginevents2-gateway3-ibm-egw-rt-apic.apps.itz-y4vfyg.infra01-lb.tok04.techzone.ibm.com:443
+    protocol: kafka-secure
+    security:
+      - EGW-SASL-SECURITY: []
+components:
+  securitySchemes:
+    EGW-SASL-SECURITY:
+      type: plain
+      description: SASL Plain authorization
